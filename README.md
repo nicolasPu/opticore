@@ -1,2 +1,2 @@
 # opticore
-[Soon] best optimisation library 
+[Soon] best rust optimisation library 
