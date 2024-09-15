@@ -1,17 +1,19 @@
-use crate::metaheuristics::{Objective, ObjectiveType, Solution, SolutionStatus};
+use crate::metaheuristics::{Objective, ObjectiveType, Solution};
 use rand::Rng;
 use std::time::Duration;
+use tokio::time::timeout;
 
 const SEED_LIMIT: usize = 1000;
 
 // todo:
-// Implement feasibility as a new func?
-// Implement a neighborhood instead of the neighbour
-// Implement a custom neighborhood generator
-// do we need lifespans?
 // implement the time limit
 // implement the seed
 
+// Implement a neighborhood instead of the neighbour
+// Implement a custom neighborhood generator for the user
+
+// Implement feasibility as a new func?
+// do we need lifespans?
 
 fn two_opt_swap(mut state: Vec<usize>) -> Vec<usize> {
     let mut rng = rand::thread_rng();
@@ -29,7 +31,7 @@ fn two_opt_swap(mut state: Vec<usize>) -> Vec<usize> {
     state
 }
 
-#[allow(dead_code)] // remove once time limit is implemented
+#[derive(Copy, Clone)] // remove once time limit is implemented
 pub struct LocalSearchParameters {
     iterations_limit: usize,
     time_limit: Duration,
@@ -40,7 +42,7 @@ impl LocalSearchParameters {
     pub fn new(iterations_limit: usize, time_limit: Duration, seed: Option<usize>) -> Self {
         Self {
             iterations_limit,
-            time_limit,
+            time_limit: time_limit.unwrap_or_else(|| Duration::MAX),
             seed: seed.unwrap_or_else(|| {
                 rand::thread_rng().gen_range(0..SEED_LIMIT) // can we try negatives?
             }),
@@ -48,68 +50,66 @@ impl LocalSearchParameters {
     }
 }
 
-
+#[derive(Copy, Clone)]
 pub struct LocalSearch<F>
 where
     F: Fn(&Vec<usize>) -> f64,
 {
-    initial_state: Vec<usize>,
-    parameters: LocalSearchParameters,
     objective: Objective<F>,
+    parameters: LocalSearchParameters,
+    solution: Solution,
 }
 
-impl <F>LocalSearch<F>
+impl<F> LocalSearch<F>
 where
     F: Fn(&Vec<usize>) -> f64,
 {
     pub fn new(
-        evaluation_function: F,
-        objective_type: ObjectiveType, // do we want to pass the objective struct? like with the params
         initial_state: Vec<usize>,
+        objective: Objective<F>,
         parameters: LocalSearchParameters,
     ) -> Self {
-        assert!(
-            initial_state.len() > 1,
-            "Initial state must have at least two elements"
-        );
+        // Should we handle errors here?
+        let initial_cost_value = objective.evaluate(&initial_state);
 
         Self {
-            initial_state,
             parameters,
-            objective: Objective::new(evaluation_function, objective_type),
+            objective,
+            solution: Solution::new_feasible(initial_state, initial_cost_value),
         }
     }
 
-    pub fn solve(&self) -> Solution {
-        let mut best_state = self.initial_state.clone();
-        let mut current_objective_value = self.objective.evaluate(&best_state);
+    pub async fn solve(&self) -> Solution {
+        let res = timeout(self.parameters.time_limit, self.local_search()).await;
+        if res.is_err() {
+            println!("Time limit reached, retrieving the best solution");
+        }
+
+        self.solution
+    }
+
+    async fn local_search(mut self) {
         let mut n_iterations: usize = 0;
+
         while n_iterations < self.parameters.iterations_limit {
             n_iterations += 1;
-            let neighbour = two_opt_swap(best_state.clone());
-            let neighbour_objective_value = self.objective.evaluate(&neighbour);
+            let neighbour = two_opt_swap(self.solution.state.clone());
+            let neighbour_solution =
+                Solution::new_feasible(neighbour, self.objective.evaluate(&neighbour));
 
-            match self.objective.goal{
-                ObjectiveType::Min => {
-                    if neighbour_objective_value < current_objective_value {
-                        current_objective_value = neighbour_objective_value;
-                        best_state = neighbour;
+            // This can be improved -- implement struct comparison and min max cases
+            match self.objective.goal {
+                ObjectiveType::Max => {
+                    if neighbour_solution.objective_value > self.solution.objective_value {
+                        self.solution = neighbour_solution;
                     }
-                },
+                }
                 _ => {
-                    if neighbour_objective_value > current_objective_value {
-                        current_objective_value = neighbour_objective_value;
-                        best_state = neighbour;
+                    if neighbour_solution.objective_value < self.solution.objective_value {
+                        self.solution = neighbour_solution;
                     }
                 }
             };
         }
-        let solution = Solution {
-            objective_value: current_objective_value,
-            solution_state: best_state,
-            status: SolutionStatus::Feasible,
-        };
-
-        solution
     }
 }

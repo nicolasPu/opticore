@@ -1,17 +1,11 @@
 pub mod local_search;
 
-// todo:
 // do we want to implement a pre-solve to check unbounded or infeasible?
-// implement a matrix state instead of a vector
-
-pub enum ObjectiveType{
-    Max,
-    Min,
-    Satisfiability,
-}
+// it would be very cool to implement a theoretical OF gap
+// handling errors for evaluate function
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 enum SolutionStatus {
     Optimal,
     Feasible,
@@ -20,22 +14,39 @@ enum SolutionStatus {
     Unknown,
 }
 
-// it would be nice to implement a theoretical gap
+#[derive(Copy, Clone)]
 pub struct Solution {
     objective_value: f64,
-    solution_state: Vec<usize>,
+    state: Vec<usize>,
     status: SolutionStatus,
 }
 
 impl Solution {
+    pub fn new_feasible(state: Vec<usize>, objective_value: f64) -> Self {
+        Self {
+            objective_value,
+            state,
+            status: SolutionStatus::Feasible,
+        }
+    }
+
+    pub fn get_solution(&self) -> Vec<usize> {
+        self.state.clone()
+    }
+
     pub fn report(&self) {
         println!("Objective Value: {}", self.objective_value);
-        println!("Solution State: {:?}", self.solution_state);
         println!("Status: {:?}", self.status);
     }
 }
 
-struct Objective<F>
+pub enum ObjectiveType {
+    Max,
+    Min,
+    Satisfiability,
+}
+
+pub struct Objective<F>
 where
     F: Fn(&Vec<usize>) -> f64,
 {
@@ -47,14 +58,14 @@ impl<F> Objective<F>
 where
     F: Fn(&Vec<usize>) -> f64,
 {
-    fn new(evaluate_function: F, goal: ObjectiveType)-> Self{
-        Self{
+    pub fn new(evaluate_function: F, goal: ObjectiveType) -> Self {
+        Self {
             evaluate_function,
             goal,
         }
     }
 
-    fn evaluate(&self, status:&Vec<usize>) -> f64{
+    fn evaluate(&self, status: &Vec<usize>) -> f64 {
         (self.evaluate_function)(status)
     }
 }
