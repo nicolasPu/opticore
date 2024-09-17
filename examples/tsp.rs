@@ -1,6 +1,5 @@
 use opticore::metaheuristics::local_search::{LocalSearch, LocalSearchParameters};
-use opticore::metaheuristics::{Objective, ObjectiveType, Solution};
-use std::time::Duration;
+use opticore::metaheuristics::{Objective, ObjectiveType};
 
 mod utils;
 
@@ -38,17 +37,18 @@ fn main() {
     // Feasible solution
     let initial_state: Vec<usize> = (1..NUMBER_OF_NODES + 1).collect();
 
-    let time_limit = Duration::new(10, 0); // 3 seconds, 0 nanoseconds
-    let parameters = LocalSearchParameters::new(100, time_limit, None); // how to no pass anything in the seed?
+    //let time_limit = Duration::new(10, 0); // 3 seconds, 0 nanoseconds
+    let parameters = LocalSearchParameters::new(100, None); // how to no pass anything in the seed?
 
     // Define the objective using a closure that captures `cost_matrix`
     let cost_function = move |solution: &Vec<usize>| calculate_route_cost(solution, &cost_matrix);
     let objective = Objective::new(cost_function, ObjectiveType::Min);
     // Solve
-    let solver = LocalSearch::new(initial_state, objective, parameters);
-    let solution: Solution = solver.solve();
+    let mut solver = LocalSearch::new(initial_state, objective, parameters);
+    let status = solver.solve();
+    // Get solution
+    println!("{}", status);
+    println!("{}", solver.objective_value());
+    println!("{:?}", solver.solution());
 
-    solution.report();
-    let solution_value = solution.get_solution();
-    println!("{:?}", solution_value);
 }

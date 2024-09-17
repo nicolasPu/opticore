@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 pub mod local_search;
 
 // do we want to implement a pre-solve to check unbounded or infeasible?
@@ -5,7 +7,7 @@ pub mod local_search;
 // handling errors for evaluate function
 
 #[allow(dead_code)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 enum SolutionStatus {
     Optimal,
     Feasible,
@@ -13,8 +15,7 @@ enum SolutionStatus {
     Unbounded,
     Unknown,
 }
-
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Solution {
     objective_value: f64,
     state: Vec<usize>,
@@ -29,15 +30,10 @@ impl Solution {
             status: SolutionStatus::Feasible,
         }
     }
-
-    pub fn get_solution(&self) -> Vec<usize> {
-        self.state.clone()
-    }
-
-    pub fn report(&self) {
-        println!("Objective Value: {}", self.objective_value);
-        println!("Status: {:?}", self.status);
-    }
+    
+    pub fn string_status(&self) -> String {
+        serde_json::to_string(&self.status).unwrap_or_else(|_| "Unknown".to_string())
+    } 
 }
 
 pub enum ObjectiveType {
@@ -46,19 +42,19 @@ pub enum ObjectiveType {
     Satisfiability,
 }
 
-pub struct Objective<F>
+pub struct Objective<EvaluatorFunction>
 where
-    F: Fn(&Vec<usize>) -> f64,
+    EvaluatorFunction: Fn(&Vec<usize>) -> f64,
 {
-    evaluate_function: F,
+    evaluate_function: EvaluatorFunction,
     goal: ObjectiveType,
 }
 
-impl<F> Objective<F>
+impl<EvaluatorFunction> Objective<EvaluatorFunction>
 where
-    F: Fn(&Vec<usize>) -> f64,
+    EvaluatorFunction: Fn(&Vec<usize>) -> f64,
 {
-    pub fn new(evaluate_function: F, goal: ObjectiveType) -> Self {
+    pub fn new(evaluate_function: EvaluatorFunction, goal: ObjectiveType) -> Self {
         Self {
             evaluate_function,
             goal,

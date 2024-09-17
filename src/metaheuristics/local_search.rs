@@ -1,12 +1,9 @@
 use crate::metaheuristics::{Objective, ObjectiveType, Solution};
 use rand::Rng;
-use std::time::Duration;
-use tokio::time::timeout;
 
 const SEED_LIMIT: usize = 1000;
 
 // todo:
-// implement the time limit
 // implement the seed
 
 // Implement a neighborhood instead of the neighbour
@@ -14,6 +11,8 @@ const SEED_LIMIT: usize = 1000;
 
 // Implement feasibility as a new func?
 // do we need lifespans?
+
+// implement the time limit // timeout on sync function? rayon and threats?
 
 fn two_opt_swap(mut state: Vec<usize>) -> Vec<usize> {
     let mut rng = rand::thread_rng();
@@ -34,39 +33,36 @@ fn two_opt_swap(mut state: Vec<usize>) -> Vec<usize> {
 #[derive(Copy, Clone)] // remove once time limit is implemented
 pub struct LocalSearchParameters {
     iterations_limit: usize,
-    time_limit: Duration,
-    seed: usize,
+    _seed: usize,
 }
 
 impl LocalSearchParameters {
-    pub fn new(iterations_limit: usize, time_limit: Duration, seed: Option<usize>) -> Self {
+    pub fn new(iterations_limit: usize, seed: Option<usize>) -> Self {
         Self {
             iterations_limit,
-            time_limit: time_limit.unwrap_or_else(|| Duration::MAX),
-            seed: seed.unwrap_or_else(|| {
+            _seed: seed.unwrap_or_else(|| {
                 rand::thread_rng().gen_range(0..SEED_LIMIT) // can we try negatives?
             }),
         }
     }
 }
 
-#[derive(Copy, Clone)]
-pub struct LocalSearch<F>
+pub struct LocalSearch<EvaluatorFunction>
 where
-    F: Fn(&Vec<usize>) -> f64,
+    EvaluatorFunction: Fn(&Vec<usize>) -> f64,
 {
-    objective: Objective<F>,
+    objective: Objective<EvaluatorFunction>,
     parameters: LocalSearchParameters,
-    solution: Solution,
+    pub solution: Solution,
 }
 
-impl<F> LocalSearch<F>
+impl<EvaluatorFunction> LocalSearch<EvaluatorFunction>
 where
-    F: Fn(&Vec<usize>) -> f64,
+    EvaluatorFunction: Fn(&Vec<usize>) -> f64,
 {
     pub fn new(
         initial_state: Vec<usize>,
-        objective: Objective<F>,
+        objective: Objective<EvaluatorFunction>,
         parameters: LocalSearchParameters,
     ) -> Self {
         // Should we handle errors here?
@@ -79,23 +75,22 @@ where
         }
     }
 
-    pub async fn solve(&self) -> Solution {
-        let res = timeout(self.parameters.time_limit, self.local_search()).await;
-        if res.is_err() {
-            println!("Time limit reached, retrieving the best solution");
-        }
-
-        self.solution
+    pub fn solution(&self) -> Vec<usize> {
+        self.solution.state.clone()
     }
 
-    async fn local_search(mut self) {
+    pub fn objective_value(&self) -> f64 {
+        self.solution.objective_value.clone()
+    }
+
+    pub fn solve(&mut self) -> String {
         let mut n_iterations: usize = 0;
 
         while n_iterations < self.parameters.iterations_limit {
             n_iterations += 1;
             let neighbour = two_opt_swap(self.solution.state.clone());
-            let neighbour_solution =
-                Solution::new_feasible(neighbour, self.objective.evaluate(&neighbour));
+            let cost = self.objective.evaluate(&neighbour);
+            let neighbour_solution = Solution::new_feasible(neighbour, cost);
 
             // This can be improved -- implement struct comparison and min max cases
             match self.objective.goal {
@@ -111,5 +106,6 @@ where
                 }
             };
         }
+        self.solution.string_status()
     }
 }
