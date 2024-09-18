@@ -2,21 +2,16 @@ use serde::{Deserialize, Serialize};
 
 pub mod local_search;
 
-// do we want to implement a pre-solve to check unbounded or infeasible?
-// it would be very cool to implement a theoretical OF gap
-// handling errors for evaluate function
-
 pub enum ObjectiveType {
     Max,
     Min,
-    //Satisfiability,
 }
 
 #[allow(dead_code)]
-#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 enum ObjectiveStatus {
-    Optimal,
     Feasible,
+    Optimal,
     UnFeasible,
     Unbounded,
     Unknown,
