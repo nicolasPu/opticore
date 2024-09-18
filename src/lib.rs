@@ -1,7 +1,8 @@
 pub mod metaheuristics;
-
+pub mod utils;
 // TODO: for the heuristics
 // Seed
+// Performance reporter
 // Feasibility as a new function the user can pass (HOW TO HANDLE ERRORS?)
 // Time limit // timeout on sync function? rayon and threats?
 // Custom neighborhood generator for the user // their own heuristic?  (ERRORS)

@@ -16,7 +16,7 @@ fn generate_random_cost_matrix(n_nodes: usize, grid_size: usize) -> Vec<Vec<f64>
         for j in i + 1..n_nodes {
             let distance = utils::euclidean_distance(nodes[i], nodes[j]);
             distance_matrix[i][j] = distance;
-            distance_matrix[j][i] = distance; // Distance is symmetric
+            distance_matrix[j][i] = distance;
         }
     }
     distance_matrix
@@ -35,11 +35,9 @@ pub fn calculate_route_cost(solution: &Vec<usize>, cost: &Vec<Vec<f64>>) -> f64 
 fn main() {
     let cost_matrix = generate_random_cost_matrix(NUMBER_OF_NODES + 1, GRID_SIZE);
     // Feasible solution
+    // tdo change this because you are assuming that it will pass the thing you want [0,1,2,3,4,5,0]
     let initial_state: Vec<usize> = (1..NUMBER_OF_NODES + 1).collect();
-
-    //let time_limit = Duration::new(10, 0); // 3 seconds, 0 nanoseconds
-    let parameters = LocalSearchParameters::new(100, None); // how to no pass anything in the seed?
-
+    let parameters = LocalSearchParameters::default();
     // Define the objective using a closure that captures `cost_matrix`
     let cost_function = move |solution: &Vec<usize>| calculate_route_cost(solution, &cost_matrix);
     let objective = Objective::new(cost_function, ObjectiveType::Min);

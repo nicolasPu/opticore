@@ -1,41 +1,39 @@
+use crate::metaheuristics::operators;
 use crate::metaheuristics::{Objective, ObjectiveType};
-use rand::Rng;
-
-const SEED_LIMIT: usize = 1000;
+use rand::random;
 
 // todo:
+// exploration strategy?
+// movement selection?
 // Implement a neighborhood instead of the neighbour
 // handling errors for evaluate function
 
-fn two_opt_swap(mut state: Vec<usize>) -> Vec<usize> {
-    let mut rng = rand::thread_rng();
-    let vec_len = state.len();
-
-    let index1 = rng.gen_range(0..vec_len);
-    let mut index2 = rng.gen_range(0..vec_len);
-
-    while index1 == index2 {
-        index2 = rng.gen_range(0..vec_len);
-    }
-
-    state.swap(index1, index2);
-
-    state
-}
-
+#[allow(dead_code)] // until use
 pub struct LocalSearchParameters {
     iterations_limit: usize,
-    _seed: usize,
+    number_of_neighbours: usize,
+    _seed: f64,
 }
 
 impl LocalSearchParameters {
-    pub fn new(iterations_limit: usize, seed: Option<usize>) -> Self {
+    pub fn new(iterations_limit: usize, number_of_neighbours: usize, seed: Option<f64>) -> Self {
         Self {
             iterations_limit,
-            _seed: seed.unwrap_or_else(|| {
-                rand::thread_rng().gen_range(0..SEED_LIMIT) // can we try negatives?
-            }),
+            number_of_neighbours,
+            _seed: seed.unwrap_or_else(|| random()), // can we try negatives?
         }
+    }
+
+    pub fn default() -> Self {
+        Self {
+            iterations_limit: 1000,
+            number_of_neighbours: 10,
+            _seed: random(),
+        }
+    }
+
+    pub fn set_seed(&mut self, seed: f64) {
+        self._seed = seed;
     }
 }
 
@@ -78,7 +76,7 @@ where
 
         while n_iterations < self.parameters.iterations_limit {
             n_iterations += 1;
-            let neighbour = two_opt_swap(self.solution.clone());
+            let neighbour = operators::two_opt_swap(self.solution.clone());
             let cost = self.objective.evaluate(&neighbour);
             let should_update = match self.objective.goal {
                 ObjectiveType::Max => cost > self.objective.objective_value,

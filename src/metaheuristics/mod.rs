@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 pub mod local_search;
+pub mod operators;
 
 pub enum ObjectiveType {
     Max,
@@ -57,3 +58,4 @@ where
         serde_json::to_string(&self.status).unwrap_or_else(|_| "Unknown".to_string())
     }
 }
+
