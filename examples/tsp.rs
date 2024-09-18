@@ -50,5 +50,4 @@ fn main() {
     println!("{}", status);
     println!("{}", solver.objective_value());
     println!("{:?}", solver.solution());
-
 }

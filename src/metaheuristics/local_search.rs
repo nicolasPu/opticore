@@ -1,9 +1,10 @@
-use crate::metaheuristics::{Objective, ObjectiveType, Solution};
+use crate::metaheuristics::{Objective, ObjectiveType};
 use rand::Rng;
 
 const SEED_LIMIT: usize = 1000;
 
 // todo:
+// think about the if we want the objective to have the OV
 // implement the seed
 
 // Implement a neighborhood instead of the neighbour
@@ -47,40 +48,40 @@ impl LocalSearchParameters {
     }
 }
 
-pub struct LocalSearch<EvaluatorFunction>
+pub struct LocalSearch<CostFunction>
 where
-    EvaluatorFunction: Fn(&Vec<usize>) -> f64,
+    CostFunction: Fn(&Vec<usize>) -> f64,
 {
-    objective: Objective<EvaluatorFunction>,
+    objective: Objective<CostFunction>,
     parameters: LocalSearchParameters,
-    pub solution: Solution,
+    pub solution: Vec<usize>,
 }
 
-impl<EvaluatorFunction> LocalSearch<EvaluatorFunction>
+impl<CostFunction> LocalSearch<CostFunction>
 where
-    EvaluatorFunction: Fn(&Vec<usize>) -> f64,
+    CostFunction: Fn(&Vec<usize>) -> f64,
 {
     pub fn new(
         initial_state: Vec<usize>,
-        objective: Objective<EvaluatorFunction>,
+        mut objective: Objective<CostFunction>,
         parameters: LocalSearchParameters,
     ) -> Self {
         // Should we handle errors here?
-        let initial_cost_value = objective.evaluate(&initial_state);
+        objective.update(&initial_state);
 
         Self {
             parameters,
             objective,
-            solution: Solution::new_feasible(initial_state, initial_cost_value),
+            solution: initial_state,
         }
     }
 
     pub fn solution(&self) -> Vec<usize> {
-        self.solution.state.clone()
+        self.solution.clone()
     }
 
     pub fn objective_value(&self) -> f64 {
-        self.solution.objective_value.clone()
+        self.objective.objective_value.clone()
     }
 
     pub fn solve(&mut self) -> String {
@@ -88,24 +89,24 @@ where
 
         while n_iterations < self.parameters.iterations_limit {
             n_iterations += 1;
-            let neighbour = two_opt_swap(self.solution.state.clone());
+            let neighbour = two_opt_swap(self.solution.clone());
             let cost = self.objective.evaluate(&neighbour);
-            let neighbour_solution = Solution::new_feasible(neighbour, cost);
-
             // This can be improved -- implement struct comparison and min max cases
             match self.objective.goal {
                 ObjectiveType::Max => {
-                    if neighbour_solution.objective_value > self.solution.objective_value {
-                        self.solution = neighbour_solution;
+                    if cost > self.objective.objective_value {
+                        self.objective.update(&neighbour);
+                        self.solution = neighbour
                     }
                 }
                 _ => {
-                    if neighbour_solution.objective_value < self.solution.objective_value {
-                        self.solution = neighbour_solution;
+                    if cost < self.objective.objective_value {
+                        self.objective.update(&neighbour);
+                        self.solution = neighbour
                     }
                 }
             };
         }
-        self.solution.string_status()
+        self.objective.status()
     }
 }

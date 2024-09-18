@@ -6,62 +6,59 @@ pub mod local_search;
 // it would be very cool to implement a theoretical OF gap
 // handling errors for evaluate function
 
+pub enum ObjectiveType {
+    Max,
+    Min,
+    //Satisfiability,
+}
+
 #[allow(dead_code)]
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
-enum SolutionStatus {
+enum ObjectiveStatus {
     Optimal,
     Feasible,
     UnFeasible,
     Unbounded,
     Unknown,
 }
-#[derive(Clone)]
-pub struct Solution {
+
+pub struct Objective<CostFunction>
+where
+    CostFunction: Fn(&Vec<usize>) -> f64,
+{
+    cost_function: CostFunction,
+    goal: ObjectiveType,
     objective_value: f64,
-    state: Vec<usize>,
-    status: SolutionStatus,
+    status: ObjectiveStatus,
 }
 
-impl Solution {
-    pub fn new_feasible(state: Vec<usize>, objective_value: f64) -> Self {
+impl<CostFunction> Objective<CostFunction>
+where
+    CostFunction: Fn(&Vec<usize>) -> f64,
+{
+    pub fn new(cost_function: CostFunction, goal: ObjectiveType) -> Self {
+        let initial_objective_function = match goal {
+            ObjectiveType::Min => f64::INFINITY,
+            ObjectiveType::Max => -f64::INFINITY,
+        };
         Self {
-            objective_value,
-            state,
-            status: SolutionStatus::Feasible,
+            cost_function,
+            goal,
+            objective_value: initial_objective_function,
+            status: ObjectiveStatus::Unknown,
         }
     }
-    
-    pub fn string_status(&self) -> String {
-        serde_json::to_string(&self.status).unwrap_or_else(|_| "Unknown".to_string())
-    } 
-}
 
-pub enum ObjectiveType {
-    Max,
-    Min,
-    Satisfiability,
-}
-
-pub struct Objective<EvaluatorFunction>
-where
-    EvaluatorFunction: Fn(&Vec<usize>) -> f64,
-{
-    evaluate_function: EvaluatorFunction,
-    goal: ObjectiveType,
-}
-
-impl<EvaluatorFunction> Objective<EvaluatorFunction>
-where
-    EvaluatorFunction: Fn(&Vec<usize>) -> f64,
-{
-    pub fn new(evaluate_function: EvaluatorFunction, goal: ObjectiveType) -> Self {
-        Self {
-            evaluate_function,
-            goal,
-        }
+    fn update(&mut self, solution: &Vec<usize>) {
+        self.objective_value = self.evaluate(solution);
+        self.status = ObjectiveStatus::Feasible;
     }
 
     fn evaluate(&self, status: &Vec<usize>) -> f64 {
-        (self.evaluate_function)(status)
+        (self.cost_function)(status)
+    }
+
+    fn status(&self) -> String {
+        serde_json::to_string(&self.status).unwrap_or_else(|_| "Unknown".to_string())
     }
 }
