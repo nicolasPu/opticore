@@ -4,16 +4,8 @@ use rand::Rng;
 const SEED_LIMIT: usize = 1000;
 
 // todo:
-// think about the if we want the objective to have the OV
-// implement the seed
-
 // Implement a neighborhood instead of the neighbour
-// Implement a custom neighborhood generator for the user
-
-// Implement feasibility as a new func?
-// do we need lifespans?
-
-// implement the time limit // timeout on sync function? rayon and threats?
+// handling errors for evaluate function
 
 fn two_opt_swap(mut state: Vec<usize>) -> Vec<usize> {
     let mut rng = rand::thread_rng();
@@ -31,7 +23,6 @@ fn two_opt_swap(mut state: Vec<usize>) -> Vec<usize> {
     state
 }
 
-#[derive(Copy, Clone)] // remove once time limit is implemented
 pub struct LocalSearchParameters {
     iterations_limit: usize,
     _seed: usize,
@@ -63,12 +54,10 @@ where
 {
     pub fn new(
         initial_state: Vec<usize>,
-        mut objective: Objective<CostFunction>,
+        objective: Objective<CostFunction>,
         parameters: LocalSearchParameters,
     ) -> Self {
-        // Should we handle errors here?
-        objective.update(&initial_state);
-
+        // Should we handle feasibility errors here?
         Self {
             parameters,
             objective,
@@ -91,20 +80,13 @@ where
             n_iterations += 1;
             let neighbour = two_opt_swap(self.solution.clone());
             let cost = self.objective.evaluate(&neighbour);
-            // This can be improved -- implement struct comparison and min max cases
-            match self.objective.goal {
-                ObjectiveType::Max => {
-                    if cost > self.objective.objective_value {
-                        self.objective.update(&neighbour);
-                        self.solution = neighbour
-                    }
-                }
-                _ => {
-                    if cost < self.objective.objective_value {
-                        self.objective.update(&neighbour);
-                        self.solution = neighbour
-                    }
-                }
+            let should_update = match self.objective.goal {
+                ObjectiveType::Max => cost > self.objective.objective_value,
+                ObjectiveType::Min => cost < self.objective.objective_value,
+            };
+            if should_update {
+                self.objective.update(&neighbour);
+                self.solution = neighbour;
             };
         }
         self.objective.status()
