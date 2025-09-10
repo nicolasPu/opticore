@@ -1,12 +1,12 @@
 use rand::Rng;
 
 pub fn generate_random_coordinates(n_coordinates: usize, grid_size: usize) -> Vec<(f64, f64)> {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     (0..n_coordinates)
         .map(|_| {
             (
-                rng.gen_range(0.0..grid_size as f64),
-                rng.gen_range(0.0..grid_size as f64),
+                rng.random_range(0.0..grid_size as f64),
+                rng.random_range(0.0..grid_size as f64),
             )
         })
         .collect()

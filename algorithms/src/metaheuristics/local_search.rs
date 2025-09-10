@@ -1,6 +1,12 @@
-use crate::metaheuristics::operators;
-use crate::metaheuristics::{Objective, ObjectiveType};
+use crate::operators;
+use opticore_core::objective::ObjectiveType;
+use opticore_core::Objective;
 use rand::random;
+
+/// This first algorithm is just a starting point for implementation.
+/// The goal is to use it as a practical example to set up the repository structure,
+/// along with the different structs and methods.
+/// Once that is in place, we will focus on improving and adding more algorithms.
 
 // todo:
 // exploration strategy?
@@ -33,7 +39,7 @@ impl LocalSearchParameters {
     }
 
     pub fn set_seed(&mut self, seed: f64) {
-        self._seed = seed;
+        self._seed = seed
     }
 }
 
@@ -43,7 +49,7 @@ where
 {
     objective: Objective<CostFunction>,
     parameters: LocalSearchParameters,
-    pub solution: Vec<usize>,
+    solution: Vec<usize>,
 }
 
 impl<CostFunction> LocalSearch<CostFunction>

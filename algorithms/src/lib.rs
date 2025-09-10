@@ -1,5 +1,5 @@
 pub mod metaheuristics;
-pub mod utils;
+pub mod operators;
 // TODO: for the heuristics
 // Seed
 // Performance reporter

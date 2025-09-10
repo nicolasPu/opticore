@@ -1,9 +1,9 @@
+use opticore::core::objective::{Objective, ObjectiveType};
 use opticore::metaheuristics::local_search::{LocalSearch, LocalSearchParameters};
-use opticore::metaheuristics::{Objective, ObjectiveType};
 
 mod utils;
 
-// using a closure is the best way to pass the cost function?
+// closure is the best way to pass the cost function?
 
 const NUMBER_OF_NODES: usize = 10;
 const GRID_SIZE: usize = 100;
@@ -35,7 +35,6 @@ pub fn calculate_route_cost(solution: &Vec<usize>, cost: &Vec<Vec<f64>>) -> f64 
 fn main() {
     let cost_matrix = generate_random_cost_matrix(NUMBER_OF_NODES + 1, GRID_SIZE);
     // Feasible solution
-    // tdo change this because you are assuming that it will pass the thing you want [0,1,2,3,4,5,0]
     let initial_state: Vec<usize> = (1..NUMBER_OF_NODES + 1).collect();
     let parameters = LocalSearchParameters::default();
     // Define the objective using a closure that captures `cost_matrix`

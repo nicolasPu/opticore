@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub mod local_search;
-pub mod operators;
-
+//Constrain satisfaction objective?
 pub enum ObjectiveType {
     Max,
     Min,
@@ -13,7 +11,7 @@ pub enum ObjectiveType {
 enum ObjectiveStatus {
     Feasible,
     Optimal,
-    UnFeasible,
+    Unfeasible,
     Unbounded,
     Unknown,
 }
@@ -23,8 +21,8 @@ where
     CostFunction: Fn(&Vec<usize>) -> f64,
 {
     cost_function: CostFunction,
-    goal: ObjectiveType,
-    objective_value: f64,
+    pub goal: ObjectiveType,
+    pub objective_value: f64,
     status: ObjectiveStatus,
 }
 
@@ -45,17 +43,16 @@ where
         }
     }
 
-    fn update(&mut self, solution: &Vec<usize>) {
+    pub fn update(&mut self, solution: &Vec<usize>) {
         self.objective_value = self.evaluate(solution);
         self.status = ObjectiveStatus::Feasible;
     }
 
-    fn evaluate(&self, status: &Vec<usize>) -> f64 {
-        (self.cost_function)(status)
+    pub fn evaluate(&self, solution: &Vec<usize>) -> f64 {
+        (self.cost_function)(solution)
     }
 
-    fn status(&self) -> String {
+    pub fn status(&self) -> String {
         serde_json::to_string(&self.status).unwrap_or_else(|_| "Unknown".to_string())
     }
 }
-
