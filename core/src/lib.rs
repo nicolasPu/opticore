@@ -1,5 +1,7 @@
+mod constraint;
+mod model;
 pub mod objective;
-pub mod solver;
+mod solver;
+mod variable;
 
 pub use objective::Objective;
-pub use solver::Solver;

@@ -7,8 +7,8 @@ pub enum ObjectiveType {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Serialize)]
-enum ObjectiveStatus {
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
+pub enum ObjectiveStatus {
     Feasible,
     Optimal,
     Unfeasible,
@@ -21,8 +21,8 @@ where
     CostFunction: Fn(&Vec<usize>) -> f64,
 {
     cost_function: CostFunction,
-    pub goal: ObjectiveType,
-    pub objective_value: f64,
+    goal: ObjectiveType,
+    objective_value: f64,
     status: ObjectiveStatus,
 }
 
@@ -43,16 +43,27 @@ where
         }
     }
 
-    pub fn update(&mut self, solution: &Vec<usize>) {
-        self.objective_value = self.evaluate(solution);
-        self.status = ObjectiveStatus::Feasible;
+    pub fn is_better(&self, new_cost: f64, old_cost: f64) -> bool {
+        match self.goal {
+            ObjectiveType::Max => new_cost > old_cost,
+            ObjectiveType::Min => new_cost < old_cost,
+        }
     }
 
     pub fn evaluate(&self, solution: &Vec<usize>) -> f64 {
         (self.cost_function)(solution)
     }
 
-    pub fn status(&self) -> String {
-        serde_json::to_string(&self.status).unwrap_or_else(|_| "Unknown".to_string())
+    pub fn status(&self) -> ObjectiveStatus {
+        self.status.clone()
+    }
+
+    pub fn value(&self) -> f64 {
+        self.objective_value.clone()
+    }
+
+    pub fn update(&mut self, solution: &Vec<usize>) {
+        self.objective_value = self.evaluate(solution);
+        self.status = ObjectiveStatus::Feasible;
     }
 }

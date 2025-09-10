@@ -1,5 +1,7 @@
 pub mod metaheuristics;
 pub mod operators;
+
+pub use metaheuristics::LocalSearch;
 // TODO: for the heuristics
 // Seed
 // Performance reporter

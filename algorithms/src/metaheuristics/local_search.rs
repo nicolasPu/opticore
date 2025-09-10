@@ -1,5 +1,5 @@
 use crate::operators;
-use opticore_core::objective::ObjectiveType;
+use opticore_core::objective::ObjectiveStatus;
 use opticore_core::Objective;
 use rand::random;
 
@@ -73,22 +73,16 @@ where
         self.solution.clone()
     }
 
-    pub fn objective_value(&self) -> f64 {
-        self.objective.objective_value.clone()
-    }
-
-    pub fn solve(&mut self) -> String {
+    pub fn solve(&mut self) -> ObjectiveStatus {
         let mut n_iterations: usize = 0;
 
         while n_iterations < self.parameters.iterations_limit {
             n_iterations += 1;
-            let neighbour = operators::two_opt_swap(self.solution.clone());
+
+            let neighbour = operators::two_opt_swap(self.solution());
             let cost = self.objective.evaluate(&neighbour);
-            let should_update = match self.objective.goal {
-                ObjectiveType::Max => cost > self.objective.objective_value,
-                ObjectiveType::Min => cost < self.objective.objective_value,
-            };
-            if should_update {
+
+            if self.objective.is_better(cost, self.objective.value()) {
                 self.objective.update(&neighbour);
                 self.solution = neighbour;
             };
