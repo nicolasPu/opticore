@@ -1,20 +1,8 @@
+use crate::objective::{Objective, ObjectiveStatus};
 use crate::operators;
-use opticore_core::objective::ObjectiveStatus;
-use opticore_core::Objective;
 use rand::random;
 
-/// This first algorithm is just a starting point for implementation.
-/// The goal is to use it as a practical example to set up the repository structure,
-/// along with the different structs and methods.
-/// Once that is in place, we will focus on improving and adding more algorithms.
-
-// todo:
-// exploration strategy?
-// movement selection?
-// Implement a neighborhood instead of the neighbour
-// handling errors for evaluate function
-
-#[allow(dead_code)] // until use
+#[allow(dead_code)]
 pub struct LocalSearchParameters {
     iterations_limit: usize,
     number_of_neighbours: usize,
@@ -26,7 +14,7 @@ impl LocalSearchParameters {
         Self {
             iterations_limit,
             number_of_neighbours,
-            _seed: seed.unwrap_or_else(|| random()), // can we try negatives?
+            _seed: seed.unwrap_or_else(|| random()),
         }
     }
 
@@ -43,34 +31,29 @@ impl LocalSearchParameters {
     }
 }
 
-pub struct LocalSearch<CostFunction>
+pub struct LocalSearch<CostFn>
 where
-    CostFunction: Fn(&Vec<usize>) -> f64,
+    CostFn: Fn(&Vec<usize>) -> f64,
 {
-    objective: Objective<CostFunction>,
+    objective: Objective<Vec<usize>, CostFn>,
     parameters: LocalSearchParameters,
     solution: Vec<usize>,
 }
 
-impl<CostFunction> LocalSearch<CostFunction>
+impl<CostFn> LocalSearch<CostFn>
 where
-    CostFunction: Fn(&Vec<usize>) -> f64,
+    CostFn: Fn(&Vec<usize>) -> f64,
 {
     pub fn new(
         initial_state: Vec<usize>,
-        objective: Objective<CostFunction>,
+        objective: Objective<Vec<usize>, CostFn>,
         parameters: LocalSearchParameters,
     ) -> Self {
-        // Should we handle feasibility errors here?
         Self {
             parameters,
             objective,
             solution: initial_state,
         }
-    }
-
-    pub fn solution(&self) -> Vec<usize> {
-        self.solution.clone()
     }
 
     pub fn solve(&mut self) -> ObjectiveStatus {
@@ -79,14 +62,26 @@ where
         while n_iterations < self.parameters.iterations_limit {
             n_iterations += 1;
 
-            let neighbour = operators::two_opt_swap(self.solution());
+            let neighbour = operators::two_opt_swap(self.current_solution());
             let cost = self.objective.evaluate(&neighbour);
 
-            if self.objective.is_better(cost, self.objective.value()) {
+            if self
+                .objective
+                .is_better(cost, self.objective.current_value())
+            {
                 self.objective.update(&neighbour);
                 self.solution = neighbour;
-            };
+            }
         }
-        self.objective.status()
+
+        self.objective.get_status()
+    }
+
+    pub fn current_solution(&self) -> Vec<usize> {
+        self.solution.clone()
+    }
+
+    pub fn best_value(&self) -> f64 {
+        self.objective.current_value()
     }
 }

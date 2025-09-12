@@ -1,5 +1,6 @@
 use rand::Rng;
 
+#[allow(dead_code)]
 pub fn generate_random_coordinates(n_coordinates: usize, grid_size: usize) -> Vec<(f64, f64)> {
     let mut rng = rand::rng();
     (0..n_coordinates)
@@ -12,7 +13,7 @@ pub fn generate_random_coordinates(n_coordinates: usize, grid_size: usize) -> Ve
         .collect()
 }
 
-// Function to calculate the Euclidean distance between two points
+#[allow(dead_code)]
 pub fn euclidean_distance(p1: (f64, f64), p2: (f64, f64)) -> f64 {
     let dx = p1.0 - p2.0;
     let dy = p1.1 - p2.1;

@@ -1,50 +1,48 @@
-use opticore::core::objective::{Objective, ObjectiveType};
+use opticore::objective::{Objective, ObjectiveType};
 use opticore::metaheuristics::local_search::{LocalSearch, LocalSearchParameters};
 
 mod utils;
 
-// closure is the best way to pass the cost function?
+// Problem parameters
+const NUM_CITIES: usize = 4;
 
-const NUMBER_OF_NODES: usize = 10;
-const GRID_SIZE: usize = 100;
+const DISTANCES: [[i64; NUM_CITIES]; NUM_CITIES] = [
+    [0, 18, 25, 30], // city 0 → {0,1,2,3}
+    [40, 0, 15, 10],
+    [33, 27, 0, 21],
+    [12, 18, 25, 0],
+];
 
-fn generate_random_cost_matrix(n_nodes: usize, grid_size: usize) -> Vec<Vec<f64>> {
-    let nodes = utils::generate_random_coordinates(n_nodes, grid_size);
-    let mut distance_matrix = vec![vec![0.0; n_nodes]; grid_size];
-
-    for i in 0..n_nodes {
-        for j in i + 1..n_nodes {
-            let distance = utils::euclidean_distance(nodes[i], nodes[j]);
-            distance_matrix[i][j] = distance;
-            distance_matrix[j][i] = distance;
-        }
-    }
-    distance_matrix
-}
-
-pub fn calculate_route_cost(solution: &Vec<usize>, cost: &Vec<Vec<f64>>) -> f64 {
-    let mut route: Vec<usize> = solution.clone();
-    // Add return to depot
+fn route_cost(solution: &Vec<usize>) -> f64 {
     let starting_node = 0;
-    route.insert(0, starting_node);
-    route.push(starting_node);
+    let mut total = 0.0;
+    let mut prev = starting_node;
 
-    route.windows(2).map(|pair| cost[pair[0]][pair[1]]).sum()
+    for &city in solution.iter() {
+        total += DISTANCES[prev][city] as f64;
+        prev = city;
+    }
+    total += DISTANCES[prev][starting_node] as f64;
+
+    total
 }
 
 fn main() {
-    let cost_matrix = generate_random_cost_matrix(NUMBER_OF_NODES + 1, GRID_SIZE);
-    // Feasible solution
-    let initial_state: Vec<usize> = (1..NUMBER_OF_NODES + 1).collect();
+    // Define the objective function
+    let objective = Objective::new(route_cost, ObjectiveType::Min);
+
+    // Initial feasible solution (visit all cities 1...N-1)
+    let initial_state: Vec<usize> = (1..NUM_CITIES).collect();
+
+    // Local search algorithm
     let parameters = LocalSearchParameters::default();
-    // Define the objective using a closure that captures `cost_matrix`
-    let cost_function = move |solution: &Vec<usize>| calculate_route_cost(solution, &cost_matrix);
-    let objective = Objective::new(cost_function, ObjectiveType::Min);
-    // Solve
     let mut solver = LocalSearch::new(initial_state, objective, parameters);
+
+    // Solve
     let status = solver.solve();
-    // Get solution
-    println!("{}", status);
-    println!("{}", solver.objective_value());
-    println!("{:?}", solver.solution());
+
+    // Print solution
+    println!("Status: {:?}", status);
+    println!("Best cost: {}", solver.best_value());
+    println!("Best route: {:?}", solver.current_solution());
 }
