@@ -7,6 +7,7 @@ pub fn two_opt_swap(mut state: Vec<usize>) -> Vec<usize> {
     let index1 = rng.random_range(0..vec_len);
     let mut index2 = rng.random_range(0..vec_len);
 
+
     while index1 == index2 {
         index2 = rng.random_range(0..vec_len);
     }
